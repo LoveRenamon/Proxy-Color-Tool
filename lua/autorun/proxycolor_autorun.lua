@@ -2,6 +2,8 @@
 	this code is prolly shit I know
 	if you want to help improve it then contribute on the github repo!
 ]]
+ProxyColor = istable( ProxyColor ) and ProxyColor or {}
+
 if SERVER then
 	AddCSLuaFile("matproxy/matproxycolors.lua")
 	AddCSLuaFile("weapons/gmod_tool/stools/proxycolor.lua")
@@ -12,7 +14,6 @@ if CLIENT then
 	--include("weapons/gmod_tool/stools/proxycolor.lua")
 	print("[Proxy Color] started.")
 end
-ProxyColor = true
 
 local Entity = FindMetaTable( "Entity" )
 
@@ -30,14 +31,19 @@ function Entity:SetProxyColor(ColorTable)
 		if IsColor(ColorTable[i]) then ColorTable[i] = ColorTable[i]:ToVector() end
 	end
 
-	self.ColorTable = ColorTable --store colortable on server
+	self.ColorTable = ColorTable --store colortable on entity (probably needs to be reworked)
 
 	--Store dupe data whatnot
 	if ( CLIENT ) then
-		net.Start("NAKProxyColorSync") --network to player (unsure if this will work yet, maybe used for clientside derma menu preview)
-		net.WriteEntity(self)
-			net.WriteTable(ColorTable)
-		net.Send(LocalPlayer())
+		if IsValid(self) then
+			if ColorTable[1] != nil then self.ColorSlot1 = ColorTable[1] end
+			if ColorTable[2] != nil then self.ColorSlot2 = ColorTable[2] end
+			if ColorTable[3] != nil then self.ColorSlot3 = ColorTable[3] end
+			if ColorTable[4] != nil then self.ColorSlot4 = ColorTable[4] end
+			if ColorTable[5] != nil then self.ColorSlot5 = ColorTable[5] end
+			if ColorTable[6] != nil then self.ColorSlot6 = ColorTable[6] end
+			if ColorTable[7] != nil then self.ColorSlot7 = ColorTable[7] end
+		end
 	else
 		local entID = self:EntIndex()
 		if entID == -1 then
@@ -54,7 +60,7 @@ function Entity:SetProxyColor(ColorTable)
 end
 
 --Function to set color table for dupes
-function DupeSetProxyColor( ply, ent, CT )
+local function DupeSetProxyColor( ply, ent, CT )
 	ent:SetProxyColor( CT )
 end
 duplicator.RegisterEntityModifier( "proxycolor", DupeSetProxyColor )
@@ -109,4 +115,21 @@ else
 			end
 		end )
 	end)
+end
+
+-- useful functions
+-- spawnonly mainly means it wont recolor if it already has a color (aka when duplicated)
+function ProxyColor.RandFromTable( ent, ctable, spawnonly )
+	if spawnonly and ent.ColorTable then return end
+	ent:SetProxyColor(ctable[math.random(1, #ctable)])
+end
+function ProxyColor.Random( ent, spawnonly )
+	if spawnonly and ent.ColorTable then return end
+	local ColorTable = {}
+	for i=1,7 do
+		local vect = VectorRand( 0, 255 )
+		vect:Normalize()
+		table.insert(ColorTable, i, vect:ToColor() )
+	end
+	ent:SetProxyColor( ColorTable )
 end
